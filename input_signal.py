@@ -2,9 +2,12 @@ from config import *
 import numpy as np
 from collections import Counter
 
-# ffast_real is a set(int)
+# ffast_real is a double
 
-class ExperimentInput:
+class InputSignal:
+    pass
+
+class ExperimentInputSignal(InputSignal):
     def __init__(self, config):
         self.config = config
         self.signal_magnitude = 1
@@ -12,8 +15,10 @@ class ExperimentInput:
         self.nonzero_freqs = {}
 
     def process(self):
-        self.needed_samples = set(range(self.config.signal_length)) 
-        # I think this can be replaced everywhere by range(config.signal_length)
+        '''
+        Goes through the process to create an input signal.
+        Note that this creates the whole input signal, not just the needed samples.
+        '''
         self.generate_nonzero_freqs()
         self.frequency_to_time() # to check
         if self.config.noisy:
@@ -26,7 +31,7 @@ class ExperimentInput:
 
     def generate_nonzero_freqs(self):
         '''
-        Generates a dictionary of frequencies: keys are frequencies, values are complex numbers encoding magnitude and phase.
+        Generates numpy arrays containing frequencies, magnitudes, phases of the signal.
         '''
         temp_locations = Counter()
 
@@ -41,15 +46,15 @@ class ExperimentInput:
             else:
                 temp_locations[temp_location] += 1
 
-        for l in temp_locations:
-            self.nonzero_freqs[l] = (self.signal_magnitude * np.exp(1j * self.get_random_phase()))
+        self.freqs = np.array(temp_locations) # I think
+        self.magnitudes = np.ones(self.freqs.size) * self.signal_magnitude # confirm they should all be the same magnitude
+        self.phases = np.fromfunction(lambda x: self.get_random_phase, self.freqs) # check this
 
     def frequency_to_time(self):
         w0 = 2 * np.pi / self.config.signal_length_original
         self.time_signal = np.zeros(self.config.signal_length_original)
         for f in self.nonzero_freqs:
-            self.time_signal += 0 
-            # ref experimentinput.cpp line 297: is this just a complicated way of adding sines?
+            self.time_signal += self.nonzero_freqs[f]
 
     def add_noise(self):
         signal_power = self.signal_magnitude ** 2
@@ -59,6 +64,8 @@ class ExperimentInput:
             noise_phase = np.random.uniform(0, 2 * np.pi)
             noise_power += noise_norm_factor # redundant?
             self.time_signal[i] += self.noise_sd * sqrt(noise_norm_factor / 2) * np.exp(1j * noise_phase)
+
+        self.noise_power = noise_power * self.noise_sd ** 2
 
         self.real_snr = signal_power * self.signal_length / (self.noise_sd ** 2)
 
