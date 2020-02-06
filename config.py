@@ -78,7 +78,7 @@ class Config:
         '''
         self.experiment_mode = self.experiment_mode or options.experiment
         if options.bins is not None:
-            self.bins = options.bins.split(" ") # c++ converts to ints but shouldn't need to do that here
+            self.bins = np.array(options.bins.split(" ")) # c++ converts to ints but shouldn't need to do that here
         if options.length is not None:
             self.signal_length = options.length
             self.signal_length_original = options.length
@@ -162,4 +162,7 @@ class Config:
         self.bins.sort()
         self.bins_sum = sum(self.bins)
         self.bin_offsets = np.cumsum(self.bins)
+
+    def need_to_use_ml_detection(self):
+        raise NotImplementedError()
         
