@@ -1,3 +1,4 @@
+from utils import *
 import numpy as np
 
 class Config:
