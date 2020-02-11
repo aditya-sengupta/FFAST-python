@@ -1,8 +1,6 @@
 from config import *
 import numpy as np
 
-M_E = 1 # ?
-
 class BinProcessor:
     def __init__(self, config, delays, observation_matrix):
         # delays object is set in frontend
@@ -116,7 +114,7 @@ class BinProcessor:
 
         self.energy_bins.sort()
         inv_eta = config.signal_sparsity_peeling * config.bins_nb / config.bins_sum
-        max_value_wanted = np.round(config.bins_sum / M_E)
+        max_value_wanted = np.round(config.bins_sum / np.e)
         max_value_wanted += config.bins_sum * sum([np.exp(-inv_eta) * pow(inv_eta, i) for i in (1, 2)]) 
         # in general, divide by gamma(i), but for i = 1 or 2 this is 1
 
