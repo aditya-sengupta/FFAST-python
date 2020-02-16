@@ -1,6 +1,6 @@
-from config import *
-from frontend import *
-from binprocessor import *
+from .config import *
+from .frontend import *
+from .binprocessor import *
 import numpy as np
 
 class BackEnd:
@@ -61,7 +61,7 @@ class BackEnd:
             peak += energy * f
             total_energy += energy
             amplitude += self.decoded_frequencies[f] * energy
-            if f + i not in self.decoded_frequencies for i in [1, 2]:
+            if all([f + i not in self.decoded_frequencies for i in [1, 2]]):
                 weighted_avg_freq = ratio * peak / total_energy
                 int_wtd_avg_freq = int(np.round(weighted_avg_freq))
                 self.real_freq_indices.append(weighted_avg_freq)

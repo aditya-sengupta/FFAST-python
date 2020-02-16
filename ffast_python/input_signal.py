@@ -1,4 +1,4 @@
-from config import *
+from .config import *
 import numpy as np
 from collections import Counter
 
@@ -91,12 +91,10 @@ class ExperimentInputSignal(InputSignal):
             return (np.floor(np.random.uniform(0, config.phases_nb)) * 2 + 1) * np.pi / config.phases_nb
 
     def distribution(urand, F):
-    '''
-    urand is of type ffast_real
-    F is a numpy array with doubles?
-    '''
-    for i in range(1, F.size): #0, or 1?
-        if urand < F[i]:
-            return (urand - F[i])/(F[i] - F[i-1]) + i/(F.size - 1)
-    return 1
+        # urand is of type ffast_real
+        # F is a numpy array with doubles?
+        for i in range(1, F.size): #0, or 1?
+            if urand < F[i]:
+                return (urand - F[i])/(F[i] - F[i-1]) + i/(F.size - 1)
+        return 1
         

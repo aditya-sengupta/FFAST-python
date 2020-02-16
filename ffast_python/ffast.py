@@ -1,5 +1,5 @@
-from config import *
-from input_signal import *
+from .config import *
+from .input_signal import *
 
 import numpy as np
 import argparse

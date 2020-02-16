@@ -1,5 +1,5 @@
-from config import *
-from backend import *
+from .config import *
+from .backend import *
 import numpy as np
 
 class OutputSignal:

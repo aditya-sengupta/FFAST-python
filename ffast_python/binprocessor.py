@@ -1,4 +1,4 @@
-from config import *
+from .config import *
 import numpy as np
 
 class BinProcessor:

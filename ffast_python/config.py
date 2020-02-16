@@ -1,10 +1,10 @@
-from utils import *
+from .utils import *
 import numpy as np
 
 class Config:
     def __init__(self, options):
-        setDefaultOptions()
-        setOptionsFromCommandLine(options)
+        self.setDefaultOptions()
+        self.setOptionsFromCommandLine(options)
         if len(self.bins) == 0:
             self.proposed_bins()
         if self.apply_window_var:
@@ -61,7 +61,6 @@ class Config:
         # coefficients is uniformly random in [0,2*pi]. 
         self.phases_nb = 0
         # FFTWstrategy = FFTW_ESTIMATE # replace this with np.fft.fft
-        self.compare_with_FFTW = False
         self.display_iteration_time = False
         self.noisy = False
         self.quantize = False
@@ -116,7 +115,6 @@ class Config:
             self.preprocess_distribution(self.distribution)
         self.output_file = options.outfile
         self.verbose = options.verbose
-        self.compare_with_fftw = self.compare_with_fftw or options.fftw
 
     def preprocess_distribution(self, new_distribution):
         temp_distribution = new_distribution.split(" ")
