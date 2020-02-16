@@ -10,18 +10,25 @@ class FrontEnd:
         print("Processing input signal")
         self.input_signal.process()
         self.sampling_period = signal_length / config.bins
-        self.dft_results = np.zeros(max(config.bins))
+
         print("Defining delays")
         self.compute_delays()
+        self.observation_matrix = np.zeros((len(config.bins), len(self.delays)), dtype=np.complex128)
+        self.count_samples_done = False
 
     def process(self):
         signal = self.input_signal.time_signal
-        for stage in range(config.bins_nb):
-            stage_sampling = self.sampling_period[stage]
+        for stage in range(len(self.config.bins)):
+            stage_sampling = int(self.sampling_period[stage])
             for d in self.delays:
                 # subsample the signal
                 subsampled_signal = np.sqrt(stage_sampling) * signal[::stage_sampling] * self.window(stage_sampling)
                 transformed = np.fft.fft(subsampled_signal)
+                bin_abs_index = self.config.bin_offsets[stage]
+                for bin_rel_index in range(self.config.bins[stage]):
+                    self.observation_matrix[bin_abs_index][delay_index] = transformed[bin_rel_index] / np.sqrt(self.config.bins[stage])
+                    bin_abs_index += 1
+        self.count_samples_done = True
 
     def compute_delays(self):
         if (self.config.noisy or self.config.apply_window_var):
@@ -39,7 +46,7 @@ class FrontEnd:
 
 
     def window(self, i):
-        if not self.config.apply_window:
+        if not self.config.apply_window_var:
             return 1
         else:
             # Blackmann-Nuttall window

@@ -12,7 +12,7 @@ class FFAST:
         print("Defining backend")
         self.backend = BackEnd(config, self.frontend)
         print("Setting output signal on backend")
-        output_signal.set_backend(backend)
+        output_signal.set_backend(self.backend)
         self.iteration = 0
 
     def get_delays(self):
@@ -79,7 +79,7 @@ def main():
         print("Running iterations")
         for i in range(iterations):
             print("Running input")
-            input_signal.process(FFAST.get_delays())
+            input_signal.process() # ffast.get_delays() in the CPP code as an argument
             print("Running FFAST process")
             ffast.process()
             print("Running output")

@@ -18,7 +18,7 @@ class BinProcessor:
         self.signal_invk = 1/self.signal_k
 
         self.signal_vector = np.zeros(self.delays_nb, dtype=np.complex128)
-        self.thresholds = np.ones(config.bins_nb, dtype=np.float64)
+        self.thresholds = np.ones(len(config.bins), dtype=np.float64)
         self.dirvector = np.zeros(self.delays_nb, dtype=np.complex128)
 
         self.compute_thresholds()

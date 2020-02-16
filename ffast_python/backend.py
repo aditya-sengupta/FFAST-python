@@ -7,11 +7,10 @@ class BackEnd:
     def __init__(self, config, frontend):
         self.observation_matrix = frontend.observation_matrix
         self.changed = np.ones(config.bins_sum, dtype=bool)
-        self.real_freq_indices = []
         self.config = config
         self.frontend = frontend
         self.decoded_frequencies = {}
-        self.real_freq_inds
+        self.real_freq_inds = []
 
     def process(self):
         binprocessor = BinProcessor(self.config, self.frontend.delays, self.observation_matrix)
@@ -19,7 +18,7 @@ class BackEnd:
         stop_peeling = False
         while singleton_found and not stop_peeling:
             singleton_found = False
-            for stage in range(config.bins_nb):
+            for stage in range(len(config.bins)):
                 self.bin_absolute_index = config.bin_offset[stage]
                 for bin_relative_index in range(config.bin_size[stage]):
                     binprocessor.adjust_to(self.bin_absolute_index, bin_relative_index, stage)
@@ -38,7 +37,7 @@ class BackEnd:
         if config.apply_window_var:
             self.get_clustered_freqs()
         else:
-            self.real_freq_indices = list(self.decoded_frequencies.keys())
+            self.real_freq_inds = list(self.decoded_frequencies.keys())
 
     def peel_from(self, location, binprocessor):
         for stage in range(self.config.bins_nb):
@@ -64,7 +63,7 @@ class BackEnd:
             if all([f + i not in self.decoded_frequencies for i in [1, 2]]):
                 weighted_avg_freq = ratio * peak / total_energy
                 int_wtd_avg_freq = int(np.round(weighted_avg_freq))
-                self.real_freq_indices.append(weighted_avg_freq)
+                self.real_freq_inds.append(weighted_avg_freq)
                 self.decoded_frequencies[int_wtd_avg_freq] = 0
                 for i in range(nb):
                     self.decoded_frequencies[int_wtd_avg_freq] += self.frontend.input_signal.time_signal[i] * np.exp(-2*np.pi * 1j * (peak / total_energy)) / config.signal_length
