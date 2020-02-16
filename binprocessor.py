@@ -6,7 +6,7 @@ class BinProcessor:
         # delays object is set in frontend
         self.config = config
         self.delays = delays
-        self.observation_matrix = observation_maatrix
+        self.observation_matrix = observation_matrix
 
         self.signal_length = config.signal_length
         self.delays_nb = config.delays_nb

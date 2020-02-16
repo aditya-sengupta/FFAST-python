@@ -66,7 +66,6 @@ class ExperimentInputSignal(InputSignal):
             self.time_signal[i] += self.noise_sd * sqrt(noise_norm_factor / 2) * np.exp(1j * noise_phase)
 
         self.noise_power = noise_power * self.noise_sd ** 2
-
         self.real_snr = signal_power * self.signal_length / (self.noise_sd ** 2)
 
     def apply_quantization(self, bits_nb):

@@ -21,7 +21,6 @@ class FrontEnd:
                 subsampled_signal = np.sqrt(stage_sampling) * signal[::stage_sampling] * self.window(stage_sampling)
                 transformed = np.fft.fft(subsampled_signal)
 
-
     def compute_delays(self):
         if (config.noisy or config.apply_window_var):
             if config.need_to_use_ml_detection():
