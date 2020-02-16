@@ -19,11 +19,14 @@ class ExperimentInputSignal(InputSignal):
         Goes through the process to create an input signal.
         Note that this creates the whole input signal, not just the needed samples.
         '''
+        print("Starting generate_nonzero_freqs")
         self.generate_nonzero_freqs()
+        print("Starting f_to_t")
         self.frequency_to_time() # to check
         if self.config.noisy:
             self.add_noise()
 
+        print("Scaling the FT")
         # scaling the Fourier transform
         self.time_signal /= np.sqrt(self.config.signal_length_original)
         if self.config.quantize:
@@ -35,20 +38,21 @@ class ExperimentInputSignal(InputSignal):
         '''
         temp_locations = Counter()
 
-        while len(temp_locations) < config.signal_sparsity:
-            dist_call = distribution(np.random.uniform(), config.distribution) # config.distribution not set yet!
-            temp_location = int(np.floor(config.signal_length_original * dist_call) % config.signal_length_original)
-
+        print(self.config.signal_sparsity)
+        while sum([temp_locations[i] for i in temp_locations.keys()]) < self.config.signal_sparsity:
+            dist_call = self.distribution(np.random.uniform(), self.config.distribution)
+            temp_location = int(np.floor(self.config.signal_length_original * dist_call) % self.config.signal_length_original)
             # for off-grid we need guard bands (?)
-            if (config.signal_length_original != config.signal_length):
+            if (self.config.signal_length_original != self.config.signal_length):
                 if sum([temp_locations[temp_location - i] for i in range(-5, 6)]) == 0:
                     temp_locations[temp_location] += 1
             else:
                 temp_locations[temp_location] += 1
 
+        print(temp_locations)
         self.freqs = np.array(temp_locations) # I think
         self.magnitudes = np.ones(self.freqs.size) * self.signal_magnitude # confirm they should all be the same magnitude
-        self.phases = np.fromfunction(lambda x: self.get_random_phase, self.freqs) # check this
+        self.phases = [self.get_random_phase() for _ in range(self.config.signal_sparsity)]
 
     def frequency_to_time(self):
         w0 = 2 * np.pi / self.config.signal_length_original
@@ -81,16 +85,17 @@ class ExperimentInputSignal(InputSignal):
     # utilities
 
     def get_random_phase(self):
-        if config.phases_nb < 1:
+        phases_nb = self.config.phases_nb
+        if phases_nb < 1:
             return np.random.uniform(0, 2 * np.pi)
-        elif config.phases_nb == 1:
+        elif phases_nb == 1:
             return 0
-        elif config.phases_nb == 2:
+        elif phases_nb == 2:
             return np.random.choice([0, np.pi])
         else:
-            return (np.floor(np.random.uniform(0, config.phases_nb)) * 2 + 1) * np.pi / config.phases_nb
+            return (np.floor(np.random.uniform(0, phases_nb)) * 2 + 1) * np.pi / phases_nb
 
-    def distribution(urand, F):
+    def distribution(self, urand, F):
         # urand is of type ffast_real
         # F is a numpy array with doubles?
         for i in range(1, F.size): #0, or 1?

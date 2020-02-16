@@ -10,7 +10,8 @@ __all__ = [
     'OutputSignal',
     'ExperimentOutputSignal',
     'norm_squared',
-    'positive_mod'
+    'positive_mod',
+    'coprime'
 ]
 
 from .backend import *

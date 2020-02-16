@@ -7,9 +7,11 @@ class FrontEnd:
         signal_length = config.signal_length
         self.config = config
         self.input_signal = input_signal
+        print("Processing input signal")
         self.input_signal.process()
         self.sampling_period = signal_length / config.bins
         self.dft_results = np.zeros(max(config.bins))
+        print("Defining delays")
         self.compute_delays()
 
     def process(self):
@@ -22,17 +24,18 @@ class FrontEnd:
                 transformed = np.fft.fft(subsampled_signal)
 
     def compute_delays(self):
-        if (config.noisy or config.apply_window_var):
-            if config.need_to_use_ml_detection():
-               self.delays = np.random.uniform(0, signal_length, config.get_delays_nb)
+        if (self.config.noisy or self.config.apply_window_var):
+            if self.config.need_to_use_ml_detection():
+               self.delays = np.random.uniform(0, signal_length, self.config.delays_nb)
             else:
                 # uses FFAST_Search
-                self.delays = np.random.uniform(0, signal_length, config.get_delays_per_bunch_nb)
-                for i in range(config.get_delays_per_bunch_nb):
+                self.delays = np.random.uniform(0, signal_length, self.config.delays_per_bunch_nb)
+                for i in range(self.config.delays_per_bunch_nb):
                     self.delays[i] += i * 2 ** i
                 self.delays %= signal_length
         else:
-            self.delays = np.array(list(range(self.config.get_delays_nb)))
+            print(self.config.delays_nb)
+            self.delays = np.array(list(range(self.config.delays_nb)))
 
 
     def window(self, i):
