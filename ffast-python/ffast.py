@@ -1,7 +1,23 @@
 from config import *
 from input_signal import *
+
 import numpy as np
 import argparse
+
+class FFAST:
+    def __init__(self, config, input_signal, output_signal):
+        self.frontend = FrontEnd(config, input_signal)
+        self.backend = BackEnd(config, frontend)
+        output_signal.set_backend(backend)
+        self.iteration = 0
+
+    def get_delays(self):
+        return self.frontend.delays
+
+    def process(self):
+        self.iteration += 1
+        self.frontend.process()
+        self.backend.process()
 
 parser = argparse.ArgumentParser()
 flags = [("-a", "--experiment", "store_true"),
@@ -47,7 +63,20 @@ def main():
         output_signal = ExperimentOutputSignal(config)
     else:
         input_signal = CustomizedInput(config)
-        output_signal = CustomizedOutput(config)
+        output_signal = CustomizedOutput(config, input_signal)
+    
+    ffast = FFAST(config, input_signal, output_signal)
+    if not config.help_displayed:
+        iterations = config.iterations
+        config.display()
+        for i in range(iterations):
+            input_signal.process(FFAST.get_delays())
+            ffast.process()
+            output_signal.process()
+
+        ffast.display_results()
+        if config.experiment_mode:
+            print("time taken")
 
 if __name__ == "__main__":
     main()

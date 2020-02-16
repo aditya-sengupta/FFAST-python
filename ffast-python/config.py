@@ -52,6 +52,7 @@ class Config:
         self.chains_nb = 1
         self.off_grid_SNR_dB = 100
         self.min_fourier_magnitude = 1
+        self.help_displayed = False
 
         # for experiment mode
         self.iterations = 1
@@ -114,7 +115,6 @@ class Config:
         if options.distribution is not None:
             self.preprocess_distribution(self.distribution)
         self.output_file = options.outfile
-        # fftw_strategy to be replaced by np.fft.fft
         self.verbose = options.verbose
         self.compare_with_fftw = self.compare_with_fftw or options.fftw
 
@@ -166,4 +166,7 @@ class Config:
 
     def need_to_use_ml_detection(self):
         raise NotImplementedError()
+
+    def display(self):
+        print("Running experiment mode, rest of text to follow.")
         
