@@ -18,16 +18,20 @@ class BackEnd:
         stop_peeling = False
         while singleton_found and not stop_peeling:
             singleton_found = False
-            for stage in range(len(config.bins)):
-                self.bin_absolute_index = config.bin_offset[stage]
-                for bin_relative_index in range(config.bin_size[stage]):
+            print("Bin offsets")
+            print(self.config.bin_offsets)
+            for stage in range(len(self.config.bins)):
+                self.bin_absolute_index = self.config.bin_offsets[stage]
+                print("Bin abs index")
+                print(self.bin_absolute_index)
+                for bin_relative_index in range(self.config.bins[stage]):
                     binprocessor.adjust_to(self.bin_absolute_index, bin_relative_index, stage)
                     if self.changed[self.bin_absolute_index] and binprocessor.is_singleton() and len(self.decoded_frequencies[binprocessor.location]) == 0:
                         singleton_found = True
                         self.decoded_frequencies[binprocessor.location] = binprocessor.amplitude
                         self.peel_from(binprocessor.location)
                     self.changed[self.bin_absolute_index] = False
-                    if len(self.decoded_frequencies) == config.signal_sparsity_peeling:
+                    if len(self.decoded_frequencies) == self.config.signal_sparsity_peeling:
                         stop_peeling = True
                         break
                 # after the break, you're out here
@@ -41,7 +45,7 @@ class BackEnd:
 
     def peel_from(self, location, binprocessor):
         for stage in range(self.config.bins_nb):
-            hash_int = (location % self.config.bin_size[stage]) + self.config.bin_offsets[stage]
+            hash_int = (location % self.config.bins[stage]) + self.config.bin_offsets[stage]
             for delay_index in range(self.config.delays_nb):
                 self.observation_matrix[hash_int][delay_index] -= binprocessor.signal_vector[delay_index]
 

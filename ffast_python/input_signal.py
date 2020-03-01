@@ -1,6 +1,7 @@
 from .config import *
 import numpy as np
 from collections import Counter
+from matplotlib import pyplot as plt
 
 # ffast_real is a double
 
@@ -38,7 +39,6 @@ class ExperimentInputSignal(InputSignal):
         '''
         temp_locations = Counter()
 
-        print(self.config.signal_sparsity)
         while sum([temp_locations[i] for i in temp_locations.keys()]) < self.config.signal_sparsity:
             dist_call = self.distribution(np.random.uniform(), self.config.distribution)
             temp_location = int(np.floor(self.config.signal_length_original * dist_call) % self.config.signal_length_original)
@@ -49,16 +49,19 @@ class ExperimentInputSignal(InputSignal):
             else:
                 temp_locations[temp_location] += 1
 
-        print(temp_locations)
-        self.freqs = np.array(temp_locations) # I think
+        print("Frequencies to excite")
+        self.freqs = np.array(list(temp_locations.keys())) # could just use a Set?
         self.magnitudes = np.ones(self.freqs.size) * self.signal_magnitude # confirm they should all be the same magnitude
         self.phases = [self.get_random_phase() for _ in range(self.config.signal_sparsity)]
 
     def frequency_to_time(self):
+        t = np.arange(self.config.signal_length_original)
         w0 = 2 * np.pi / self.config.signal_length_original
-        self.time_signal = np.zeros(self.config.signal_length_original)
-        for f in self.nonzero_freqs:
-            self.time_signal += self.nonzero_freqs[f]
+        self.time_signal = np.zeros((self.config.signal_length_original,), dtype=np.complex128)
+        for m, f, p in zip(self.magnitudes, self.freqs, self.phases):
+            self.time_signal += m * np.exp(1j * f * t + p) # C++ doesn't seem to have the phase offsets?
+
+        assert np.any(self.time_signal - np.mean(self.time_signal)) # want them not all zero
 
     def add_noise(self):
         signal_power = self.signal_magnitude ** 2
@@ -95,11 +98,11 @@ class ExperimentInputSignal(InputSignal):
         else:
             return (np.floor(np.random.uniform(0, phases_nb)) * 2 + 1) * np.pi / phases_nb
 
+    #@staticmethod
     def distribution(self, urand, F):
         # urand is of type ffast_real
         # F is a numpy array with doubles?
-        for i in range(1, F.size): #0, or 1?
+        for i in range(1, F.size): #0, or 1?            
             if urand < F[i]:
                 return (urand - F[i])/(F[i] - F[i-1]) + i/(F.size - 1)
         return 1
-        

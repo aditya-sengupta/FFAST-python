@@ -17,7 +17,7 @@ class Config:
         self.set_bin_offsets_and_sum()
 
         if self.distribution is None:
-            self.preprocess_distribution("1")
+            self.preprocess_distribution("0 1")
 
         self.eff_snr = 10 ** (self.SNR_dB/10)
         if self.default_delays and self.apply_window_var:
@@ -47,10 +47,10 @@ class Config:
 
     def setDefaultOptions(self):
         self.output_file = "ffastOutput.txt"
-        self.signal_length = 124950
+        self.signal_length = 140
         self.signal_length_original = self.signal_length
-        self.signal_sparsity_peeling = 40
-        self.signal_sparsity = 40
+        self.signal_sparsity_peeling = 4
+        self.signal_sparsity = 4
         self.length_factor = 1 # n = LCM(Bins)*lengthfactor
         self.maximum_likelihood = False
         self.count_samples = True
@@ -166,13 +166,16 @@ class Config:
             tested_bins.pop()
         
         self.bins = best_bins
+        print(self.bins)
         self.apply_window_var = (self.signal_length != best_length) or self.apply_window_var 
         self.signal_length = best_length
 
     def set_bin_offsets_and_sum(self):
         self.bins.sort()
         self.bins_sum = sum(self.bins)
-        self.bin_offsets = np.cumsum(self.bins)
+        self.bin_offsets = np.zeros((len(self.bins),), dtype=int)
+        for i in range(1, len(self.bins)):
+            self.bin_offsets[i] = self.bin_offsets[i - 1] + self.bins[i-1]
 
     def need_to_use_ml_detection(self):
         raise NotImplementedError()

@@ -9,25 +9,36 @@ class FrontEnd:
         self.input_signal = input_signal
         print("Processing input signal")
         self.input_signal.process()
+        print("Input signal")
+        print(self.input_signal.time_signal)
+        print("Input signal shape")
+        print(self.input_signal.time_signal.shape)
+        print("Input signal is-all-zero")
+        print(np.all(self.input_signal.time_signal == 0))
         self.sampling_period = signal_length / config.bins
 
         print("Defining delays")
         self.compute_delays()
-        self.observation_matrix = np.zeros((len(config.bins), len(self.delays)), dtype=np.complex128)
+        self.observation_matrix = np.zeros((len(self.delays), sum(config.bins)), dtype=np.complex128)
+        print("Shape of obs matrix")
+        print(self.observation_matrix.shape)
         self.count_samples_done = False
 
     def process(self):
         signal = self.input_signal.time_signal
         for stage in range(len(self.config.bins)):
             stage_sampling = int(self.sampling_period[stage])
-            for d in self.delays:
+            print(self.delays)
+            for i, d in enumerate(self.delays):
                 # subsample the signal
-                subsampled_signal = np.sqrt(stage_sampling) * signal[::stage_sampling] * self.window(stage_sampling)
+                print("Stage sampling")
+                print(stage_sampling)
+                subsampled_signal = np.sqrt(stage_sampling) * signal[d::self.config.bins[stage]] * self.window(stage_sampling)
+                print("Subsampled")
+                print(len(subsampled_signal))
                 transformed = np.fft.fft(subsampled_signal)
-                bin_abs_index = self.config.bin_offsets[stage]
-                for bin_rel_index in range(self.config.bins[stage]):
-                    self.observation_matrix[bin_abs_index][delay_index] = transformed[bin_rel_index] / np.sqrt(self.config.bins[stage])
-                    bin_abs_index += 1
+                print(len(transformed))
+                self.observation_matrix[i] = np.pad(transformed, (0, sum(self.config.bins) - len(transformed)), 'constant') / np.sqrt(self.config.bins[stage])
         self.count_samples_done = True
 
     def compute_delays(self):
