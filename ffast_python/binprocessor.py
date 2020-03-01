@@ -106,12 +106,10 @@ class BinProcessor:
         return energy <= self.thresholds[self.stage]
 
     def compute_thresholds(self):
-        print("writing to energy bins")
         self.energy_bins = np.zeros(self.config.bins_sum)
         if self.config.noisy or self.config.quantize or self.config.apply_window_var:
             for stage in range(self.config.get_bins_nb):
                 for i in range(len(self.bins[stage])):
-                    print(norm_squared(self.observation_matrix[self.config.bin_offset[stage] + i]))
                     self.energy_bins[i] = norm_squared(self.observation_matrix[self.config.bin_offset[stage] + i])
 
             self.energy_bins.sort()
@@ -123,8 +121,6 @@ class BinProcessor:
             noise_level_crossed = False
             noise_estimation = 0
             energy_histogram_bins_counted = 0
-            print("energy bins")
-            print(self.energy_bins)
             while not noise_level_crossed:
                 noise_estimation += self.energy_bins[energy_histogram_bins_counted]
                 energy_histogram_bins_counted += 1

@@ -20,14 +20,11 @@ class ExperimentInputSignal(InputSignal):
         Goes through the process to create an input signal.
         Note that this creates the whole input signal, not just the needed samples.
         '''
-        print("Starting generate_nonzero_freqs")
         self.generate_nonzero_freqs()
-        print("Starting f_to_t")
-        self.frequency_to_time() # to check
+        self.frequency_to_time() 
         if self.config.noisy:
             self.add_noise()
 
-        print("Scaling the FT")
         # scaling the Fourier transform
         self.time_signal /= np.sqrt(self.config.signal_length_original)
         if self.config.quantize:
@@ -49,7 +46,6 @@ class ExperimentInputSignal(InputSignal):
             else:
                 temp_locations[temp_location] += 1
 
-        print("Frequencies to excite")
         self.freqs = np.array(list(temp_locations.keys())) # could just use a Set?
         self.magnitudes = np.ones(self.freqs.size) * self.signal_magnitude # confirm they should all be the same magnitude
         self.phases = [self.get_random_phase() for _ in range(self.config.signal_sparsity)]

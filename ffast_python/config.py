@@ -43,14 +43,13 @@ class Config:
         assert self.delays_nb <= self.signal_length / max(self.bins)
         if not self.maximum_likelihood:
             assert self.delays_per_bunch_nb >= 2
-        print(self.delays_nb)
 
     def setDefaultOptions(self):
         self.output_file = "ffastOutput.txt"
-        self.signal_length = 140
+        self.signal_length = 124950
         self.signal_length_original = self.signal_length
-        self.signal_sparsity_peeling = 4
-        self.signal_sparsity = 4
+        self.signal_sparsity_peeling = 40
+        self.signal_sparsity = 40
         self.length_factor = 1 # n = LCM(Bins)*lengthfactor
         self.maximum_likelihood = False
         self.count_samples = True
@@ -63,7 +62,7 @@ class Config:
         self.distribution = None
 
         # for experiment mode
-        self.iterations = 1
+        self.iterations = 10
         self.experiment_mode = True
         # Phase = 0 implies phase of non-zero 
         # coefficients is uniformly random in [0,2*pi]. 
@@ -103,7 +102,6 @@ class Config:
         if options.file is not None:
             self.input_file = options.file
             self.experiment_mode = False
-            print("Options file")
         if options.minmagnitude is not None:
             self.min_fourier_magnitude = options.minmagnitude
         if options.iterations is not None:
@@ -128,7 +126,6 @@ class Config:
         self.verbose = options.verbose
 
     def preprocess_distribution(self, new_distribution):
-        print(new_distribution)
         temp_distribution = new_distribution.split(" ")
         l = len(temp_distribution)
         self.distribution = np.zeros(l)
@@ -166,7 +163,6 @@ class Config:
             tested_bins.pop()
         
         self.bins = best_bins
-        print(self.bins)
         self.apply_window_var = (self.signal_length != best_length) or self.apply_window_var 
         self.signal_length = best_length
 
@@ -178,8 +174,19 @@ class Config:
             self.bin_offsets[i] = self.bin_offsets[i - 1] + self.bins[i-1]
 
     def need_to_use_ml_detection(self):
-        raise NotImplementedError()
+        return self.maximum_likelihood
 
     def display(self):
-        print("Running experiment mode, rest of text to follow.")
+        print("Running experiment mode (for now).")
+        print("Signal length: %d" % self.signal_length)
+        print("Signal sparsity: %d" % self.signal_sparsity)
+        if self.noisy:
+            print("Signal-to-noise ratio (dB): %d" % self.SNR_dB)
+        else:
+            print("Noiseless signal")
+        if self.phases_nb == 0:
+            print("Random phase")
+
+        print("Delays: %d" % self.delays_nb)
+        print("Bins: " + ' '.join([str(b) + '' for b in self.bins]))
         

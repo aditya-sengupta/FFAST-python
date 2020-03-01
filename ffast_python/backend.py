@@ -18,12 +18,8 @@ class BackEnd:
         stop_peeling = False
         while singleton_found and not stop_peeling:
             singleton_found = False
-            print("Bin offsets")
-            print(self.config.bin_offsets)
             for stage in range(len(self.config.bins)):
                 self.bin_absolute_index = self.config.bin_offsets[stage]
-                print("Bin abs index")
-                print(self.bin_absolute_index)
                 for bin_relative_index in range(self.config.bins[stage]):
                     binprocessor.adjust_to(self.bin_absolute_index, bin_relative_index, stage)
                     if self.changed[self.bin_absolute_index] and binprocessor.is_singleton() and len(self.decoded_frequencies[binprocessor.location]) == 0:
@@ -38,7 +34,7 @@ class BackEnd:
                 if stop_peeling:
                     break
         
-        if config.apply_window_var:
+        if self.config.apply_window_var:
             self.get_clustered_freqs()
         else:
             self.real_freq_inds = list(self.decoded_frequencies.keys())

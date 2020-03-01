@@ -16,20 +16,20 @@ class ExperimentOutputSignal(OutputSignal):
         decoded_frequencies = {}
         if self.backend is None:
             return
-        if config.signal_length_original != config.signal_length:
+        if self.config.signal_length_original != self.config.signal_length:
             for f in self.backend.decoded_frequencies:
                 if f + 1 in self.input_signal.nonzero_freqs:
                     decoded_frequencies[f + 1] = self.backend.decoded_frequencies[f]
                 elif f - 1 in self.input_signal.nonzero_freqs:
                     decoded_frequencies[f - 1] = self.backend.decoded_frequencies[f]
-        elif f + 2 in self.input_signal.nonzero_freqs:
-            decoded_frequencies[f + 2] = self.backend.decoded_frequencies[f]
-        elif f - 2 in self.input_signal.nonzero_freqs:
-            decoded_frequencies[f - 2] = self.backend.decoded_frequencies[f]
-        else:
-            decoded_frequencies[f] = self.backend.decoded_frequencies[f]
+                elif f + 2 in self.input_signal.nonzero_freqs:
+                    decoded_frequencies[f + 2] = self.backend.decoded_frequencies[f]
+                elif f - 2 in self.input_signal.nonzero_freqs:
+                    decoded_frequencies[f - 2] = self.backend.decoded_frequencies[f]
+                else:
+                    decoded_frequencies[f] = self.backend.decoded_frequencies[f]
 
-        backend.decoded_frequencies = decoded_frequencies
+        self.backend.decoded_frequencies = decoded_frequencies
 
     def set_backend(self, new_backend):
         self.backend = new_backend

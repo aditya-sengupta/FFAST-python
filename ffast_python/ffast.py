@@ -1,17 +1,16 @@
 from .config import *
 from .input_signal import *
 from .output_signal import *
+import time
 
 import numpy as np
 import argparse
 
 class FFAST:
     def __init__(self, config, input_signal, output_signal):
-        print("Defining frontend")
+        self.config = config
         self.frontend = FrontEnd(config, input_signal)
-        print("Defining backend")
         self.backend = BackEnd(config, self.frontend)
-        print("Setting output signal on backend")
         output_signal.set_backend(self.backend)
         self.iteration = 0
 
@@ -22,6 +21,19 @@ class FFAST:
         self.iteration += 1
         self.frontend.process()
         self.backend.process()
+
+    def display_results(self, time):
+        # print this by default
+        self.config.display()
+        print("<===== NUMBER OF SAMPLES =====>")
+        samples_used = self.frontend.get_used_samples_nb()
+        print("%d -> used samples" % samples_used)
+        proportion = 100 * samples_used / self.config.signal_length_original
+        print("%.2f%% samples touched" % proportion)
+        print("<===== AVERAGE TIME (in milliseconds) =====>")
+        print("Total time: %d" % time)
+        time_per = time / self.iteration
+        print("Time per iteration: % d" % time_per)
 
 parser = argparse.ArgumentParser()
 flags = [("-a", "--experiment", "store_true"),
@@ -59,7 +71,8 @@ for flag_tuple in flags:
 # '-u' needs additional action
 
 def main():
-    np.random.seed(0)
+    time_initial = int(np.round(time.time() * 1000))
+    # np.random.seed(0)
     args = parser.parse_args()
     config = Config(args)
 
@@ -70,24 +83,17 @@ def main():
         input_signal = CustomizedInput(config)
         output_signal = CustomizedOutput(config, input_signal)'''
     
-    print("Defining FFAST")
     ffast = FFAST(config, input_signal, output_signal)
-    print("Running process")
     if not config.help_displayed:
         iterations = config.iterations
-        config.display()
-        print("Running iterations")
         for i in range(iterations):
-            print("Running input")
             input_signal.process() # ffast.get_delays() in the CPP code as an argument
-            print("Running FFAST process")
             ffast.process()
-            print("Running output")
             output_signal.process()
 
-        ffast.display_results()
-        if config.experiment_mode:
-            print("time taken")
+        time_final = int(np.round(time.time() * 1000))
+
+        ffast.display_results(time_final - time_initial)
 
 if __name__ == "__main__":
     main()
