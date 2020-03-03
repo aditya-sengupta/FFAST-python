@@ -33,4 +33,25 @@ class ExperimentOutputSignal(OutputSignal):
 
     def set_backend(self, new_backend):
         self.backend = new_backend
+
+    def check_full_recovery(self):
+        missed_locations = set()
+        for f in self.input_signal.nonzero_freqs:
+            if f not in self.backend.decoded_frequencies:
+                missed_locations.add(f)
+        
+        if missed_locations:
+            binning_failure = False
+            for stage in range(len(self.config.bins)):
+                bin_status = np.zeros((self.config.bins[stage],), dtype=int)
+                for i in range(len(missed_locations)):
+                    bin_status[i % self.config.bins[stage]] += 1
+                if all(bin_status != 1):
+                    binning_failure = True
+                    break
+                
+        if binning_failure:
+            self.binning_failures_nb += 1
+            missed_locations_iterations_nb = 0
+            
         

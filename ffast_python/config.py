@@ -3,13 +3,16 @@ import numpy as np
 import copy
 
 class Config:
-    def __init__(self, options):
+    def __init__(self, options=None):
         self.setDefaultOptions()
-        self.setOptionsFromCommandLine(options)
+        if options is not None:
+            self.setOptionsFromCommandLine(options)
         if self.bins is None:
             self.proposed_bins()
         self.bins = np.array(self.bins)
-        
+        self.compute_params()
+
+    def compute_params(self):
         if self.apply_window_var:
             self.signal_sparsity_peeling = 3 * self.signal_sparsity
         self.max_SNR_dB = max(self.max_SNR_dB, self.SNR_dB)
@@ -88,7 +91,7 @@ class Config:
         self.experiment_mode = self.experiment_mode or options.experiment
         
         if options.bins is not None:
-            self.bins = np.array(options.bins.split(" ")) # c++ converts to ints but shouldn't need to do that here
+            self.bins = np.array(options.bins) # c++ converts to ints but shouldn't need to do that here
         if options.length is not None:
             self.signal_length = options.length
             self.signal_length_original = options.length
