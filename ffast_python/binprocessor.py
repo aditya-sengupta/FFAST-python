@@ -84,7 +84,12 @@ class BinProcessor:
         omega = 0
         need_to_shift = False
         for j in range(self.delays_per_bunch_nb - 1):
-            self.angles[j] = np.angle(np.conj(self.observation_matrix[i * self.delays_per_bunch_nb + j + 1][self.bin_absolute_index]))
+            y0 = self.observation_matrix[i * self.delays_per_bunch_nb + j][self.bin_absolute_index]
+            y1 = self.observation_matrix[i * self.delays_per_bunch_nb + j + 1][self.bin_absolute_index]
+
+
+            self.angles[j] = np.angle(y1*np.conj(y0))
+            
             if not need_to_shift and self.angles[j] < -np.pi/2:
                 need_to_shift = True
             omega += self.weights[j] * self.angles[j]
