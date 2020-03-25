@@ -16,13 +16,20 @@ class FrontEnd:
 
     def process(self):
         signal = self.input_signal.time_signal
+        # go over each stage
         for stage in range(len(self.config.bins)):
+            # sampling period at the stage
             stage_sampling = int(self.sampling_period[stage])
+            # go over the delays
             for i, d in enumerate(self.delays):
+                # print('frontend delay: {}'.format(d))
+
                 # subsample the signal
                 self.used_samples = self.used_samples.union(set(range(d, len(signal), stage_sampling)))
+
                 subsampled_signal = np.sqrt(stage_sampling) * signal[d::stage_sampling] * self.window(stage_sampling)
                 transformed = np.fft.fft(subsampled_signal)
+
                 s, e = self.config.bin_offsets[stage], self.config.bin_offsets[stage] + self.config.bins[stage]
                 self.observation_matrix[i][s:e] = transformed / np.sqrt(self.config.bins[stage])
         self.count_samples_done = True

@@ -22,6 +22,7 @@ class ExperimentInputSignal(InputSignal):
         '''
         self.generate_nonzero_freqs()
         self.frequency_to_time() 
+
         if self.config.noisy:
             self.add_noise()
 
@@ -29,6 +30,8 @@ class ExperimentInputSignal(InputSignal):
         self.time_signal /= np.sqrt(self.config.signal_length_original)
         if self.config.quantize:
             self.apply_quantization(self.config.quantization_bits_nb)
+
+        return True
 
     def generate_nonzero_freqs(self):
         '''
@@ -39,6 +42,7 @@ class ExperimentInputSignal(InputSignal):
         while sum([temp_locations[i] for i in temp_locations.keys()]) < self.config.signal_sparsity:
             dist_call = self.distribution(np.random.uniform(), self.config.distribution)
             temp_location = int(np.floor(self.config.signal_length_original * dist_call) % self.config.signal_length_original)
+            
             # for off-grid we need guard bands (?)
             if (self.config.signal_length_original != self.config.signal_length):
                 if sum([temp_locations[temp_location - i] for i in range(-5, 6)]) == 0:
@@ -48,16 +52,22 @@ class ExperimentInputSignal(InputSignal):
 
         self.freqs = np.array(list(temp_locations.keys())) # could just use a Set?
         self.magnitudes = np.ones(self.freqs.size) * self.signal_magnitude # confirm they should all be the same magnitude
-        self.phases = [self.get_random_phase() for _ in range(self.config.signal_sparsity)]
+        # make phases to be fixed for now for simple debugging
+        # self.phases = [self.get_random_phase() for _ in range(self.config.signal_sparsity)]
+        self.phases = [0 for _ in range(self.config.signal_sparsity)]
 
     def frequency_to_time(self):
+
         t = np.arange(self.config.signal_length_original)
         w0 = 2 * np.pi / self.config.signal_length_original
+        
         self.time_signal = np.zeros((self.config.signal_length_original,), dtype=np.complex128)
         for m, f, p in zip(self.magnitudes, self.freqs, self.phases):
-            self.time_signal += m * np.exp(1j * f * t + p) # C++ doesn't seem to have the phase offsets?
+            # we need to multiply by w0 here
+            self.time_signal += m * np.exp(1j * w0 * f * t + p) # C++ doesn't seem to have the phase offsets?
 
-        assert np.any(self.time_signal - np.mean(self.time_signal)) # want them not all zero
+        # this assertion would kill the DC signal which is okay for us
+        # assert np.any(self.time_signal - np.mean(self.time_signal)) # want them not all zero
 
     def add_noise(self):
         signal_power = self.signal_magnitude ** 2

@@ -54,7 +54,10 @@ class Config:
         self.signal_sparsity_peeling = 40
         self.signal_sparsity = 40
         self.length_factor = 1 # n = LCM(Bins)*lengthfactor
+
+        # there will be multiple methods Kay, ML, new-one
         self.maximum_likelihood = False
+        
         self.count_samples = True
         self.delays_per_bunch_nb = 2
         self.chains_nb = 1
@@ -112,7 +115,10 @@ class Config:
         if options.sparsity is not None:
             self.signal_sparsity = options.sparsity
             self.signal_sparsity_peeling = options.sparsity
-        self.maximum_likelihood = options.ml
+
+        # method
+        self.bin_processing_method = options.bin_processing_method
+        
         if options.factor is not None:
             self.length_factor = options.factor
         if options.quantization is not None:
@@ -179,17 +185,27 @@ class Config:
     def need_to_use_ml_detection(self):
         return self.maximum_likelihood
 
-    def display(self):
-        print("Running experiment mode (for now).")
-        print("Signal length: %d" % self.signal_length)
-        print("Signal sparsity: %d" % self.signal_sparsity)
-        if self.noisy:
-            print("Signal-to-noise ratio (dB): %d" % self.SNR_dB)
-        else:
-            print("Noiseless signal")
-        if self.phases_nb == 0:
-            print("Random phase")
+    def __str__(self):
+        s_list = []
 
-        print("Delays: %d" % self.delays_nb)
-        print("Bins: " + ' '.join([str(b) + '' for b in self.bins]))
-        
+        s_list.append("Running experiment mode (for now)")
+        s_list.append("Signal length: %d" % self.signal_length)
+        s_list.append("Signal sparsity: %d" % self.signal_sparsity)
+
+        if self.noisy:
+            s_list.append("Signal-to-noise ratio (dB): %d" % self.SNR_dB)
+        else:
+            s_list.append("Noiseless signal")
+
+        if self.phases_nb == 0:
+            s_list.append("Random phase")
+
+        s_list.append("Delays: %d" % self.delays_nb)
+        s_list.append("Bins: " + ' '.join([str(b) + '' for b in self.bins]))
+
+        s_list.append("Bin processor: {}".format(self.bin_processing_method))
+
+        return '\n'.join(s_list)
+
+    def display(self):
+        print(self.__str__())

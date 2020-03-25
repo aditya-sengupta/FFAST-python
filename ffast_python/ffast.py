@@ -16,7 +16,7 @@ def make_args():
             ("-g", "--minmagnitude", float), 
             ("-i", "--iterations", int), #
             ("-k", "--sparsity", int), #
-            ("-l", "--ml", "store_true"),
+            # ("-l", "--ml", "store_true"), put this below as it requires some processing
             ("-m", "--factor", int),
             ("-n", "--length", int), #
             ("-o", "--optimize", "store_true"),
@@ -37,6 +37,8 @@ def make_args():
             parser.add_argument(short_flag, long_flag, type=int, nargs='+')
         else:
             parser.add_argument(short_flag, long_flag, type=type_input)
+
+    parser.add_argument('-l', '--bin-processing-method', type=str, choices={'kay', 'ml', 'new'}, default='kay')
 
     return parser.parse_args()
 

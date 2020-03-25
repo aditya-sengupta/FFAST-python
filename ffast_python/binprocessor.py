@@ -13,7 +13,10 @@ class BinProcessor:
         self.chains_nb = config.chains_nb
         self.delays_per_bunch_nb = config.delays_per_bunch_nb
 
-        self.ml_detection = config.maximum_likelihood
+        # bin processing method
+        self.bin_processing_method = config.bin_processing_method
+
+        # this is w0
         self.signal_k = 2 * np.pi / self.signal_length
         self.signal_invk = 1/self.signal_k
 
@@ -23,29 +26,45 @@ class BinProcessor:
 
         self.compute_thresholds()
 
-        if not self.ml_detection:
+        if self.bin_processing_method == 'kay':
             self.angles = np.zeros(self.delays_per_bunch_nb - 1)
             # self.weights = np.zeros(self.delays_per_bunch_nb - 1)
             self.compute_weights()
 
+    def adjust_to(self, new_bin_abs_index, new_bin_rel_index, new_stage):
+        self.bin_absolute_index = new_bin_abs_index
+        self.bin_relative_index = new_bin_rel_index
+        self.stage = new_stage
+        self.bin_size = self.config.bins[self.stage]
+
     def process(self):
-        if self.ml_detection:
+        if self.bin_processing_method == 'ml':
             self.ml_process()
-        else:
+        elif self.bin_processing_method == 'kay':
             self.compute_location()
             self.estimate_bin_signal()
+        elif self.bin_processing_method == 'new':
+            print('not implemented yet')
 
     def ml_process(self):
         ml_noise = float('inf')
         ml_location = 0
-        self.location = bin_relative_index # set where?
-        while location < self.signal_length:
+        
+        # start with the first frequency location that aliases to the bin
+        self.location = self.bin_relative_index
+
+        while self.location < self.signal_length:
             self.estimate_bin_signal()
+            
             if self.noise < ml_noise:
                 ml_noise = self.noise
                 ml_location = self.location
+            
             # binSize is equal to the number of bins at the stage
+            # this is the aliasing jumps a location i and i+self.bin_size
+            # aliases to the same bin
             self.location += self.bin_size
+        
         self.location = ml_location
         self.estimate_bin_signal()
 
@@ -76,29 +95,30 @@ class BinProcessor:
         return omega + 2 * np.pi * (omega < 0)
 
     def estimate_bin_signal(self):
+        """
+        Given the location estimates the signal
+        """
         delay_index = 0
         amplitude = 0
+        
+        # TODO: delays might not be consecutive so we need to get the delays from the frontend or backend
         for i in range(len(self.delays)):
-            self.dirvector[i] = np.exp(1j * self.signal_k * self.location * i)
+            self.dirvector[i] = np.exp(1j * self.signal_k * self.location * i) # TODO: this needs to get the true delay not the index
             amplitude += np.conj(self.dirvector[i]) * self.observation_matrix[i][self.bin_absolute_index]
 
         self.amplitude = amplitude / self.delays_nb
         self.noise = 0
+
         for i in range(self.delays_nb):
             self.signal_vector[i] = self.amplitude * self.dirvector[i]
             self.noise += norm_squared(self.observation_matrix[i][self.bin_absolute_index] - self.signal_vector[i])
-
-    def adjust_to(self, new_bin_abs_index, new_bin_rel_index, new_stage):
-        self.bin_absolute_index = new_bin_abs_index
-        self.bin_relative_index = new_bin_rel_index
-        self.stage = new_stage
-        self.bin_size = self.config.bins[self.stage]
 
     def is_singleton(self):
         if self.is_zeroton():
             return False
         
         self.process()
+
         return self.noise <= self.thresholds[self.stage] and norm_squared(self.amplitude) > self.minimum_energy
 
     def is_zeroton(self):
@@ -154,5 +174,8 @@ class BinProcessor:
             self.thresholds *= base_threshold
         
     def compute_weights(self):
+        """
+        These weights are given in the original paper by Kay
+        """
         base_weight = 6 / (self.delays_per_bunch_nb * (self.delays_per_bunch_nb ** 2 - 1))
         self.weights = base_weight * np.fromfunction(lambda i: (i + 1) * (self.delays_per_bunch_nb  - (i + 1)), (self.delays_per_bunch_nb-1,))
