@@ -1,6 +1,6 @@
 import numpy as np
 
-norm_squared = lambda x: np.inner(x.conjugate(), x)
+norm_squared = lambda x: np.linalg.norm(x)**2
 positive_mod = lambda a, b: (a % b) + b * (a % b < 0)
 
 def coprime(bins):

@@ -1,5 +1,6 @@
 from .config import *
 import numpy as np
+import pdb
 
 class BinProcessor:
     def __init__(self, config, delays, observation_matrix):
@@ -84,12 +85,12 @@ class BinProcessor:
         omega = 0
         need_to_shift = False
         for j in range(self.delays_per_bunch_nb - 1):
-            y0 = self.observation_matrix[i * self.delays_per_bunch_nb + j][self.bin_absolute_index]
-            y1 = self.observation_matrix[i * self.delays_per_bunch_nb + j + 1][self.bin_absolute_index]
+            y0 = self.observation_matrix[i * self.delays_per_bunch_nb + j, self.bin_absolute_index]
+            y1 = self.observation_matrix[i * self.delays_per_bunch_nb + j + 1, self.bin_absolute_index]
 
 
             self.angles[j] = np.angle(y1*np.conj(y0))
-            
+
             if not need_to_shift and self.angles[j] < -np.pi/2:
                 need_to_shift = True
             omega += self.weights[j] * self.angles[j]
@@ -106,17 +107,16 @@ class BinProcessor:
         delay_index = 0
         amplitude = 0
         
-        # TODO: delays might not be consecutive so we need to get the delays from the frontend or backend
-        for i in range(len(self.delays)):
-            self.dirvector[i] = np.exp(1j * self.signal_k * self.location * i) # TODO: this needs to get the true delay not the index
-            amplitude += np.conj(self.dirvector[i]) * self.observation_matrix[i][self.bin_absolute_index]
+        # TODO: check if this works
+        self.dirvector = np.exp(1j * self.signal_k * self.location * np.array(self.delays))
+        amplitude = np.conj(self.dirvector).dot(self.observation_matrix[:, self.bin_absolute_index])
 
         self.amplitude = amplitude / self.delays_nb
         self.noise = 0
 
-        for i in range(self.delays_nb):
-            self.signal_vector[i] = self.amplitude * self.dirvector[i]
-            self.noise += norm_squared(self.observation_matrix[i][self.bin_absolute_index] - self.signal_vector[i])
+        self.signal_vector = self.amplitude * self.dirvector
+        self.noise = norm_squared(self.observation_matrix[:, self.bin_absolute_index] - self.signal_vector)
+        self.noise /= self.config.delays_nb
 
     def is_singleton(self):
         if self.is_zeroton():
@@ -131,29 +131,47 @@ class BinProcessor:
         return energy <= self.thresholds[self.stage]
 
     def compute_thresholds(self):
+        # total number of bins
         self.energy_bins = np.zeros(self.config.bins_sum)
-        if self.config.noisy or self.config.quantize or self.config.apply_window_var:
-            for stage in range(self.config.get_bins_nb):
-                for i in range(len(self.bins[stage])):
-                    self.energy_bins[i] = norm_squared(self.observation_matrix[self.config.bin_offset[stage] + i])
 
-            self.energy_bins.sort()
-            inv_eta = self.config.signal_sparsity_peeling * len(self.config.bins) / self.config.bins_sum
-            max_value_wanted = np.round(self.config.bins_sum / np.e)
-            max_value_wanted += self.config.bins_sum * sum([np.exp(-inv_eta) * pow(inv_eta, i) for i in (1, 2)]) 
-            # in general, divide by gamma(i), but for i = 1 or 2 this is 1
+        energy_bin_counter = 0
 
-            noise_level_crossed = False
-            noise_estimation = 0
-            energy_histogram_bins_counted = 0
-            while not noise_level_crossed:
-                noise_estimation += self.energy_bins[energy_histogram_bins_counted]
-                energy_histogram_bins_counted += 1
-                assert self.energy_bins[energy_histogram_bins_counted - 1] != 0, "div by 0"
-                if (self.energy_bins[energy_histogram_bins_counted] / self.energy_bins[energy_histogram_bins_counted - 1]) >= 10:
-                    noise_level_crossed = True
+        # this is to estimate the noise level
+        # let's assume we know the noise level for now
+        # if self.config.noisy or self.config.quantize or self.config.apply_window_var:
+        #     # go over each stage
+        #     for stage in range(self.config.get_num_stages()):
+        #         # go over each bin in the stage
+        #         for i in range(self.config.bins[stage]):
+        #             print(self.config.bin_offsets[stage] + i)
+        #             # pdb.set_trace()
+        #             self.energy_bins[energy_bin_counter] = norm_squared(self.observation_matrix[:, self.config.bin_offsets[stage] + i])
+        #             energy_bin_counter += 1
 
-            noise_estimation /= energy_histogram_bins_counted
+        #     self.energy_bins /= self.config.delays_nb
+
+        #     self.energy_bins.sort()
+        #     print(self.energy_bins)
+
+        #     inv_eta = self.config.signal_sparsity_peeling * len(self.config.bins) / self.config.bins_sum
+        #     max_value_wanted = np.round(self.config.bins_sum / np.e)
+        #     max_value_wanted += self.config.bins_sum * sum([np.exp(-inv_eta) * pow(inv_eta, i) for i in (1, 2)]) 
+        #     # in general, divide by gamma(i), but for i = 1 or 2 this is 1
+
+        #     noise_level_crossed = False
+        #     noise_estimation = 0
+        #     energy_histogram_bins_counted = 0
+        #     while not noise_level_crossed:
+        #         noise_estimation += self.energy_bins[energy_histogram_bins_counted]
+        #         energy_histogram_bins_counted += 1
+        #         assert self.energy_bins[energy_histogram_bins_counted - 1] != 0, "div by 0"
+        #         if (self.energy_bins[energy_histogram_bins_counted] / self.energy_bins[energy_histogram_bins_counted - 1]) >= 5:
+        #             noise_level_crossed = True
+
+        #     noise_estimation /= energy_histogram_bins_counted
+
+        if self.config.noisy:
+            noise_estimation = self.config.get_noise_sd()**2
 
         if not (self.config.noisy or self.config.quantize or self.config.apply_window_var):
             self.minimum_energy = 1e-8

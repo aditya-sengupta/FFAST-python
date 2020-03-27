@@ -11,8 +11,10 @@ class InputSignal:
 class ExperimentInputSignal(InputSignal):
     def __init__(self, config):
         self.config = config
+        # let's fix the signal magnitude to 1 so that we can control the
+        # SNR by changing the noise level only
         self.signal_magnitude = 1
-        self.noise_sd = pow(10, -config.SNR_dB / 20) # noise_power is square of this (for use outside add_noise)
+        self.noise_sd = pow(10, -self.config.SNR_dB / 20) # noise_power is square of this (for use outside add_noise)
         self.nonzero_freqs = {}
 
     def process(self):
@@ -70,16 +72,19 @@ class ExperimentInputSignal(InputSignal):
         # assert np.any(self.time_signal - np.mean(self.time_signal)) # want them not all zero
 
     def add_noise(self):
+        """
+        Make this with randn as it is easier to read
+        """
         signal_power = self.signal_magnitude ** 2
         noise_power = 0
         for i in range(self.config.signal_length):
             noise_norm_factor = -2 * np.log(np.random.uniform())
             noise_phase = np.random.uniform(0, 2 * np.pi)
             noise_power += noise_norm_factor # redundant?
-            self.time_signal[i] += self.noise_sd * sqrt(noise_norm_factor / 2) * np.exp(1j * noise_phase)
+            self.time_signal[i] += self.noise_sd * np.sqrt(noise_norm_factor / 2) * np.exp(1j * noise_phase)
 
         self.noise_power = noise_power * self.noise_sd ** 2
-        self.real_snr = signal_power * self.signal_length / (self.noise_sd ** 2)
+        self.real_snr = signal_power * self.config.signal_length / (self.noise_sd ** 2)
 
     def apply_quantization(self, bits_nb):
         self.not_initialized = True

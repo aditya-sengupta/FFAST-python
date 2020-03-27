@@ -29,12 +29,15 @@ class Config:
             self.offgrid_snr_dB = 10 * np.log10(snr_from_offgrid)
             self.eff_snr = 1/(1 / self.eff_snr + 1/snr_from_offgrid)
 
-        self.delay_scaling = 3 * self.eff_snr/ (1 + 4 * np.sqrt(self.eff_snr))
-        self.chains_nb = np.ceil(np.log(self.signal_length)/np.sqrt(self.delay_scaling))
-        if not self.maximum_likelihood:
-            self.delays_per_bunch_nb = 2 * int(np.ceil(pow(np.log(self.signal_length), 1/3)) / np.sqrt(self.delay_scaling))
-        self.chains_nb = max(self.chains_nb, 1)
-        self.delays_per_bunch_nb = max(self.delays_per_bunch_nb, 2)
+        if self.default_delays:
+            self.delay_scaling = 3 * self.eff_snr/ (1 + 4 * np.sqrt(self.eff_snr))
+            self.chains_nb = np.ceil(np.log(self.signal_length)/np.sqrt(self.delay_scaling))
+            if self.bin_processing_method == 'kay':
+                self.delays_per_bunch_nb = 2 * int(np.ceil(pow(np.log(self.signal_length), 1/3)) / np.sqrt(self.delay_scaling))
+            self.chains_nb = max(self.chains_nb, 1)
+            self.delays_per_bunch_nb = max(self.delays_per_bunch_nb, 2)
+        
+
         if self.apply_window_var:
             self.chains_nb *= (1 + np.log(self.signal_sparsity)/np.log(10))
         self.delays_nb = int(self.chains_nb * self.delays_per_bunch_nb)
@@ -44,7 +47,8 @@ class Config:
         assert self.signal_length >= self.signal_sparsity
         assert self.delays_nb >= 2
         assert self.delays_nb <= self.signal_length / max(self.bins)
-        if not self.maximum_likelihood:
+        
+        if self.bin_processing_method == 'kay':
             assert self.delays_per_bunch_nb >= 2
 
     def setDefaultOptions(self):
@@ -116,7 +120,7 @@ class Config:
             self.signal_sparsity = options.sparsity
             self.signal_sparsity_peeling = options.sparsity
 
-        # method
+        # method for bin processing ['kay', 'ml', 'new']
         self.bin_processing_method = options.bin_processing_method
         
         if options.factor is not None:
@@ -125,8 +129,10 @@ class Config:
             self.quantize = True
             self.quantization_bits_nb = options.quantization
         self.reconstruct_signal_in_backend = options.reconstruct
+        
         self.noisy = options.snr is not None
         self.SNR_dB = options.snr or self.SNR_dB
+        
         if options.maxsnr is not None:
             self.max_SNR_dB = options.maxsnr
         if options.distribution is not None:
@@ -182,8 +188,14 @@ class Config:
         for i in range(1, len(self.bins)):
             self.bin_offsets[i] = self.bin_offsets[i - 1] + self.bins[i-1]
 
+    def get_num_stages(self):
+        return len(self.bins)
+
     def need_to_use_ml_detection(self):
         return self.maximum_likelihood
+
+    def get_noise_sd(self):
+        return pow(10, -self.SNR_dB / 20)
 
     def __str__(self):
         s_list = []
