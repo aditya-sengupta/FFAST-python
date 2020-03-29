@@ -2,6 +2,7 @@ from .config import *
 from .frontend import *
 from .binprocessor import *
 import numpy as np
+import pdb
 
 class BackEnd:
     def __init__(self, config, frontend):
@@ -41,6 +42,7 @@ class BackEnd:
                     binprocessor.adjust_to(self.bin_absolute_index, bin_relative_index, stage)
 
                     if binprocessor.is_singleton():
+                        # pdb.set_trace()
                         print('found a singleton at {}'.format(binprocessor.location))
 
                     # this is throwing an error with the decoded_frequencies

@@ -4,13 +4,27 @@ import copy
 
 class Config:
     def __init__(self, options=None):
+
+        # first set options to default
         self.setDefaultOptions()
+        # get the options from command line
         if options is not None:
             self.setOptionsFromCommandLine(options)
+        # if bins are not given, propose bins
+        # we will mostly rely on bins to be given
         if self.bins is None:
             self.proposed_bins()
+
         self.bins = np.array(self.bins)
+
+        # if anything is not given, compute them
         self.compute_params()
+
+    def is_kay_based_binprocessing(self):
+        if self.bin_processing_method == 'kay' or self.bin_processing_method == 'kay2':
+            return True
+        else:
+            return False
 
     def compute_params(self):
         if self.apply_window_var:
@@ -32,7 +46,7 @@ class Config:
         if self.default_delays:
             self.delay_scaling = 3 * self.eff_snr/ (1 + 4 * np.sqrt(self.eff_snr))
             self.chains_nb = np.ceil(np.log(self.signal_length)/np.sqrt(self.delay_scaling))
-            if self.bin_processing_method == 'kay':
+            if self.is_kay_based_binprocessing():
                 self.delays_per_bunch_nb = 2 * int(np.ceil(pow(np.log(self.signal_length), 1/3)) / np.sqrt(self.delay_scaling))
             self.chains_nb = max(self.chains_nb, 1)
             self.delays_per_bunch_nb = max(self.delays_per_bunch_nb, 2)
@@ -48,7 +62,7 @@ class Config:
         assert self.delays_nb >= 2
         assert self.delays_nb <= self.signal_length / max(self.bins)
         
-        if self.bin_processing_method == 'kay':
+        if self.is_kay_based_binprocessing():
             assert self.delays_per_bunch_nb >= 2
 
     def setDefaultOptions(self):
@@ -68,7 +82,12 @@ class Config:
         self.off_grid_SNR_dB = 100
         self.min_fourier_magnitude = 1
         self.help_displayed = False
+
+        # information about the bins
+        self.primes = None
+        self.prime_powers = None
         self.bins = None
+
         self.distribution = None
 
         # for experiment mode
@@ -97,8 +116,16 @@ class Config:
         
         self.experiment_mode = self.experiment_mode or options.experiment
         
+
+        # now we get primes, prime powers, and bins separately
+        # we do not need to do that
+        if options.primes is not None:
+            self.primes = np.array(options.primes)
+        if options.prime_powers is not None:
+            self.prime_powers = np.array(options.prime_powers)
         if options.bins is not None:
             self.bins = np.array(options.bins) # c++ converts to ints but shouldn't need to do that here
+        
         if options.length is not None:
             self.signal_length = options.length
             self.signal_length_original = options.length
@@ -120,7 +147,7 @@ class Config:
             self.signal_sparsity = options.sparsity
             self.signal_sparsity_peeling = options.sparsity
 
-        # method for bin processing ['kay', 'ml', 'new']
+        # method for bin processing ['kay', 'kay2', ml', 'new']
         self.bin_processing_method = options.bin_processing_method
         
         if options.factor is not None:
@@ -182,11 +209,10 @@ class Config:
         self.signal_length = best_length
 
     def set_bin_offsets_and_sum(self):
-        self.bins.sort()
+        # self.bins.sort() # lets not sort this
         self.bins_sum = sum(self.bins)
-        self.bin_offsets = np.zeros((len(self.bins),), dtype=int)
-        for i in range(1, len(self.bins)):
-            self.bin_offsets[i] = self.bin_offsets[i - 1] + self.bins[i-1]
+        self.bin_offsets = np.roll(np.cumsum(self.bins),1)
+        self.bin_offsets[0] = 0
 
     def get_num_stages(self):
         return len(self.bins)

@@ -27,10 +27,16 @@ class BinProcessor:
 
         self.compute_thresholds()
 
-        if self.bin_processing_method == 'kay':
+        if self.is_kay_based_binprocessing():
             self.angles = np.zeros(self.delays_per_bunch_nb - 1)
             # self.weights = np.zeros(self.delays_per_bunch_nb - 1)
             self.compute_weights()
+
+    def is_kay_based_binprocessing(self):
+        if self.bin_processing_method == 'kay' or self.bin_processing_method == 'kay2':
+            return True
+        else:
+            return False
 
     def adjust_to(self, new_bin_abs_index, new_bin_rel_index, new_stage):
         self.bin_absolute_index = new_bin_abs_index
@@ -41,7 +47,7 @@ class BinProcessor:
     def process(self):
         if self.bin_processing_method == 'ml':
             self.ml_process()
-        elif self.bin_processing_method == 'kay':
+        elif self.is_kay_based_binprocessing():
             self.compute_location()
             self.estimate_bin_signal()
         elif self.bin_processing_method == 'new':
@@ -73,7 +79,12 @@ class BinProcessor:
         location_bis = 0
 
         for i in range(self.chains_nb):
-            temp_location = self.signal_invk * self.get_omega(i) % self.signal_length
+            if self.bin_processing_method == 'kay':
+                temp_location = self.signal_invk * self.get_omega(i) % self.signal_length
+            elif self.bin_processing_method == 'kay2':
+                temp_location = self.signal_invk * self.get_omega2(i) % self.signal_length
+            else:
+                print('error')
             temp_location += (temp_location > 0) * self.signal_length
             loc_update = temp_location / 2**i - location_bis
             r = loc_update - np.round((loc_update * 2**i) / self.signal_length) * (self.signal_length / 2**i)
@@ -100,9 +111,53 @@ class BinProcessor:
 
         return omega + 2 * np.pi * (omega < 0)
 
+    def get_omega2(self, i):
+        """
+        This is my best implementation
+        """
+        a = i * self.delays_per_bunch_nb
+        b = a + self.delays_per_bunch_nb
+
+        my_signal = self.observation_matrix[a:b, self.bin_absolute_index]
+        
+        # we will check 4 settings
+        t = np.arange(self.delays_per_bunch_nb)
+        
+        v_best = -np.inf
+        omega_best = 0
+        for k in range(4):
+            rotater = np.exp(-1j*np.pi*k*t/2)
+            y = my_signal*rotater
+            angle_diff = np.angle(np.conj(y[0:-1])*y[1:])
+            omega = self.weights.dot(angle_diff)
+            
+            y_hat = np.exp(1j*omega*t)
+            
+            v = np.abs(np.dot(y, np.conj(y_hat)))
+            
+            if v > v_best:
+                omega_best = (omega + k*np.pi/2) % (2*np.pi)
+                v_best = v
+        
+        return omega_best
+
+
+    def decode_amplitude(self, v):
+        """
+        The theory requires things to be on a constellation
+        So here we decode which constellation point we are sending
+        """
+        if v > 0:
+            return 1
+        else:
+            return -1
+
     def estimate_bin_signal(self):
         """
         Given the location estimates the signal
+
+        The theory requires things to be on constellation, so we are going to assume the
+        signal either is +1 or -1 here
         """
         delay_index = 0
         amplitude = 0
@@ -110,10 +165,12 @@ class BinProcessor:
         # TODO: check if this works
         self.dirvector = np.exp(1j * self.signal_k * self.location * np.array(self.delays))
         amplitude = np.conj(self.dirvector).dot(self.observation_matrix[:, self.bin_absolute_index])
+        amplitude = amplitude / self.delays_nb
 
-        self.amplitude = amplitude / self.delays_nb
+        # here we edit the amplitude maybe using decode_amplitude
+        self.amplitude = amplitude
+        
         self.noise = 0
-
         self.signal_vector = self.amplitude * self.dirvector
         self.noise = norm_squared(self.observation_matrix[:, self.bin_absolute_index] - self.signal_vector)
         self.noise /= self.config.delays_nb
@@ -124,7 +181,17 @@ class BinProcessor:
         
         self.process()
 
-        return self.noise <= self.thresholds[self.stage] and norm_squared(self.amplitude) > self.minimum_energy
+        # this technique is by looking at the residual energies
+        # if self.noise <= self.thresholds[self.stage] and norm_squared(self.amplitude) > self.minimum_energy:
+            # is_singleton = True
+
+
+        if np.abs(self.amplitude) > 0.5:
+            is_singleton = True
+        else:
+            is_singleton = False
+
+        return is_singleton
 
     def is_zeroton(self):
         energy = norm_squared(self.observation_matrix[:,self.bin_absolute_index])
