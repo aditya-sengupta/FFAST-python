@@ -38,6 +38,13 @@ class BinProcessor:
         else:
             return False
 
+    def get_delays_for_stage(self, stage):
+        # if delays is a list of lists
+        if isinstance(self.delays[0], list):
+            return self.delays[stage]
+        else:
+            return self.delays
+
     def adjust_to(self, new_bin_abs_index, new_bin_rel_index, new_stage):
         self.bin_absolute_index = new_bin_abs_index
         self.bin_relative_index = new_bin_rel_index
@@ -51,7 +58,10 @@ class BinProcessor:
             self.compute_location()
             self.estimate_bin_signal()
         elif self.bin_processing_method == 'new':
-            print('not implemented yet')
+            print('running new method')
+            self.find_location_new()
+            self.estimate_bin_signal()
+            
 
     def ml_process(self):
         ml_noise = float('inf')
@@ -159,11 +169,10 @@ class BinProcessor:
         The theory requires things to be on constellation, so we are going to assume the
         signal either is +1 or -1 here
         """
-        delay_index = 0
-        amplitude = 0
-        
         # TODO: check if this works
-        self.dirvector = np.exp(1j * self.signal_k * self.location * np.array(self.delays))
+
+        delays = self.get_delays_for_stage(self.stage)
+        self.dirvector = np.exp(1j * self.signal_k * self.location * np.array(delays))
         amplitude = np.conj(self.dirvector).dot(self.observation_matrix[:, self.bin_absolute_index])
         amplitude = amplitude / self.delays_nb
 
@@ -201,10 +210,9 @@ class BinProcessor:
         # total number of bins
         self.energy_bins = np.zeros(self.config.bins_sum)
 
-        energy_bin_counter = 0
-
         # this is to estimate the noise level
         # let's assume we know the noise level for now
+        # energy_bin_counter = 0
         # if self.config.noisy or self.config.quantize or self.config.apply_window_var:
         #     # go over each stage
         #     for stage in range(self.config.get_num_stages()):
@@ -269,3 +277,114 @@ class BinProcessor:
         """
         base_weight = 6 / (self.delays_per_bunch_nb * (self.delays_per_bunch_nb ** 2 - 1))
         self.weights = base_weight * np.fromfunction(lambda i: (i + 1) * (self.delays_per_bunch_nb  - (i + 1)), (self.delays_per_bunch_nb-1,))
+
+    def get_inverter_for_stage(self):
+        r_total = 1
+        p = self.config.primes[self.stage]
+        n = self.config.prime_powers[self.stage]
+        F = p**n
+        
+        for si in range(self.config.get_num_stages()):
+            if si != self.stage:
+                a = self.config.primes[si]
+                m = self.config.prime_powers[si]
+                r = get_multiplicative_inverse(a, m, p, n)
+                r_total = (r_total*r)%F
+        
+        return r_total
+
+    def get_residual_location_for_stage(self):
+        r = self.get_inverter_for_stage()
+        return r * self.bin_relative_index
+
+    def indices_for_stage_factor_bit(self, factor_index, bit_index):
+        assert self.stage != factor_index, 'factor and stage should be different'
+        assert bit_index < self.config.prime_powers[factor_index], 'factor does not have that bit'
+        
+        p = self.config.primes[factor_index]
+        b = 0
+        for fi in range(0, factor_index):
+            if fi != self.stage:
+                b += self.config.prime_powers[fi] * self.config.primes[fi] * self.config.delays_per_bunch_nb
+        b += p * bit_index * self.config.delays_per_bunch_nb
+        e = b + p * self.config.delays_per_bunch_nb
+        return b, e
+
+    def estimate_bit_ml(self,
+                        chain,
+                        sampling_points,
+                        ref_w0,
+                        prime_base,
+                        statistics_function=np.abs):
+        """
+        chain:               pairs of samples obtained from the chain
+        sampling_points:     the points at which the samples are obtained
+        ref_w0:              the reference frequency obtained so far
+        p:                   prime that is equal to the base
+        statistics_function: when we know the amplitude we can use np.real 
+                             as the statistics function.  However, when the
+                             coefficient is not known, we need to use np.abs
+        """
+        # number of pairs in a chain
+        max_inprod = -np.inf
+        best_loc = 0
+        rotater = np.exp(-1j*ref_w0*sampling_points)
+        chain = chain*rotater
+
+        # go over possible bits
+        t = np.arange(len(sampling_points))
+        for l in range(prime_base):
+            steering_vector = np.exp(-1j*2*np.pi*l*t/prime_base)
+            current_inprod = chain.dot(steering_vector)
+            if statistics_function(current_inprod) > max_inprod:
+                max_inprod = statistics_function(current_inprod)
+                best_loc = l
+        return int(best_loc)
+
+    def recover_modulo(self, factor_index):
+        """
+        Make the one with the signal pre-made.
+        """
+        r = self.get_residual_location_for_stage()
+        F = self.config.bins[self.stage] 
+        p = self.config.primes[factor_index]
+        q = self.config.prime_powers[factor_index]
+        N = self.config.signal_length / self.config.bins[self.stage]
+        
+        c_so_far = 0
+        for chain_index in range(q):
+            delay_b, delay_e = self.indices_for_stage_factor_bit(factor_index, chain_index)
+            x = self.observation_matrix[delay_b:delay_e, self.bin_absolute_index]
+            t = np.array(self.get_delays_for_stage(self.stage)[delay_b:delay_e])
+            y = x * np.exp(-1j*2*np.pi*t*r/F)
+            ref_w0 = (2*np.pi)*c_so_far/N
+            bit = self.estimate_bit_ml(y, t, ref_w0, prime_base=p)
+            c_so_far += bit * (p**chain_index)
+
+        return c_so_far
+
+    # TODO: fix this part
+    def find_location_new(self):
+        N = self.config.signal_length / self.config.bins[self.stage]
+        
+        u = 0
+        for si in range(self.config.get_num_stages()):
+            if si != self.stage:
+                p = self.config.primes[si]
+                q = self.config.prime_powers[si]
+                
+                N_bar = int(N // self.config.bins[si])
+                
+                minv = get_multiplicative_inverse(N_bar, 1, p, q)
+                
+                ri = self.recover_modulo(si)
+                
+                u += minv*ri*N_bar
+                
+        u = u % N
+        
+        loc = u * self.config.bins[self.stage] + self.bin_relative_index * N
+        
+        return loc % self.config.signal_length
+
+

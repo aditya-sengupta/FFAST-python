@@ -20,7 +20,8 @@ class FrontEnd:
         return self.config.bin_offsets[stage], self.config.bin_offsets[stage] + self.config.bins[stage]
 
     def get_delays_for_stage(self, stage):
-        if isinstance(self.delays, list):
+        # if delays is a list of lists
+        if isinstance(self.delays[0], list):
             return self.delays[stage]
         else:
             return self.delays
@@ -54,7 +55,8 @@ class FrontEnd:
         self.count_samples_done = True
 
     def get_max_delays(self):
-        if isinstance(self.delays, list):
+        # if it is a list of lists
+        if isinstance(self.delays[0], list):
             max_val = 0
             for d in self.delays:
                 if len(d) > max_val:
