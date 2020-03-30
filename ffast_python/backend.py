@@ -31,12 +31,10 @@ class BackEnd:
 
             # go over each stage
             for stage in range(len(self.config.bins)):
-        
                 stage_head_bin = self.config.bin_offsets[stage]
 
                 # go over the bins in each stage
                 for bin_relative_index in range(self.config.bins[stage]):
-
                     self.bin_absolute_index = stage_head_bin + bin_relative_index
 
                     binprocessor.adjust_to(self.bin_absolute_index, bin_relative_index, stage)
@@ -45,7 +43,6 @@ class BackEnd:
                         # pdb.set_trace()
                         print('found a singleton at {}'.format(binprocessor.location))
 
-                    # this is throwing an error with the decoded_frequencies
                     if self.changed[self.bin_absolute_index] and binprocessor.is_singleton() and (binprocessor.location not in self.decoded_frequencies.keys()):
                         singleton_found = True
                         self.decoded_frequencies[binprocessor.location] = binprocessor.amplitude
@@ -80,8 +77,18 @@ class BackEnd:
             # this can be made as a vector subtraction
             # for delay_index in range(self.config.delays_nb):
             #     self.observation_matrix[hash_int][delay_index] -= binprocessor.signal_vector[delay_index]
-            self.observation_matrix[:, hash_int] -= binprocessor.signal_vector
+            # self.observation_matrix[:, hash_int] -= binprocessor.signal_vector
+
+            self.observation_matrix[:, hash_int] -= self.calculate_signature_at_stage(binprocessor, stage)
             self.changed[hash_int] = True
+
+    def calculate_signature_at_stage(self, binprocessor, stage):
+        signal_vector = np.zeros(self.frontend.get_max_delays(), dtype=np.complex128)
+
+        delays = self.frontend.get_delays_for_stage(stage)
+        dirvector = np.exp(1j * binprocessor.signal_k * binprocessor.location * np.array(delays))
+        signal_vector[0:len(delays)] = binprocessor.amplitude * dirvector
+        return signal_vector
 
     # this is for off-grid
     # off-grid is not implemented in this version of the code

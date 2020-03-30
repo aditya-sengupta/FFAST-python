@@ -58,7 +58,6 @@ class BinProcessor:
             self.compute_location()
             self.estimate_bin_signal()
         elif self.bin_processing_method == 'new':
-            print('running new method')
             self.find_location_new()
             self.estimate_bin_signal()
             
@@ -173,16 +172,16 @@ class BinProcessor:
 
         delays = self.get_delays_for_stage(self.stage)
         self.dirvector = np.exp(1j * self.signal_k * self.location * np.array(delays))
-        amplitude = np.conj(self.dirvector).dot(self.observation_matrix[:, self.bin_absolute_index])
-        amplitude = amplitude / self.delays_nb
+        amplitude = np.conj(self.dirvector).dot(self.observation_matrix[:len(delays), self.bin_absolute_index])
+        amplitude = amplitude / len(delays)
 
         # here we edit the amplitude maybe using decode_amplitude
         self.amplitude = amplitude
         
         self.noise = 0
         self.signal_vector = self.amplitude * self.dirvector
-        self.noise = norm_squared(self.observation_matrix[:, self.bin_absolute_index] - self.signal_vector)
-        self.noise /= self.config.delays_nb
+        self.noise = norm_squared(self.observation_matrix[:len(delays), self.bin_absolute_index] - self.signal_vector)
+        self.noise /= len(delays)
 
     def is_singleton(self):
         if self.is_zeroton():
@@ -365,7 +364,7 @@ class BinProcessor:
 
     # TODO: fix this part
     def find_location_new(self):
-        N = self.config.signal_length / self.config.bins[self.stage]
+        N = self.config.signal_length // self.config.bins[self.stage]
         
         u = 0
         for si in range(self.config.get_num_stages()):
@@ -383,8 +382,8 @@ class BinProcessor:
                 
         u = u % N
         
-        loc = u * self.config.bins[self.stage] + self.bin_relative_index * N
-        
-        return loc % self.config.signal_length
+        loc = u * self.config.bins[self.stage] + self.get_residual_location_for_stage() * N
+
+        self.location = int(loc % self.config.signal_length)
 
 

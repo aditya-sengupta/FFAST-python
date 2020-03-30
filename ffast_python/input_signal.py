@@ -53,6 +53,9 @@ class ExperimentInputSignal(InputSignal):
                 temp_locations[temp_location] += 1
 
         self.freqs = np.array(list(temp_locations.keys())) # could just use a Set?
+
+        # self.freqs = np.array([38])
+
         self.magnitudes = np.ones(self.freqs.size) * self.signal_magnitude # confirm they should all be the same magnitude
         # make phases to be fixed for now for simple debugging
         # self.phases = [self.get_random_phase() for _ in range(self.config.signal_sparsity)]

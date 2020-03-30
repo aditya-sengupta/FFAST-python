@@ -33,7 +33,6 @@ class FrontEnd:
         # TODO: make this a list of bins
         self.observation_matrix = np.zeros((self.get_max_delays(), sum(self.config.bins)), dtype=np.complex128)
 
-
         # go over each stage
         for stage in range(self.config.get_num_stages()):
             # sampling period at the stage
@@ -42,12 +41,10 @@ class FrontEnd:
 
             for i, d in enumerate(self.get_delays_for_stage(stage)):
                 # print('frontend delay: {}'.format(d))
-
-                # subsample the signal
-                self.used_samples = self.used_samples.union(set(range(d, len(signal), stage_sampling)))
-
                 # delays should wrap around the signal length
                 subsampling_points = np.arange(d, d+self.config.signal_length, stage_sampling) % self.config.signal_length
+                # subsample the signal
+                self.used_samples = self.used_samples.union(set(subsampling_points))
                 subsampled_signal = np.sqrt(stage_sampling) * signal[subsampling_points] * self.window(stage_sampling)
                 transformed = np.fft.fft(subsampled_signal)    
 
@@ -104,8 +101,8 @@ class FrontEnd:
         
         delays_for_factor = []
         for qi in range(q-1,-1,-1):
-#             root = np.random.choice(self.n, 1)
-            root = 0
+            root = np.random.choice(self.config.signal_length, 1)
+            # root = 0
             t = np.arange(0, p*self.config.delays_per_bunch_nb) * (annihilating_jump * p**qi)
             t = (root + t) % self.config.signal_length
             t = t.astype(int)
@@ -115,7 +112,6 @@ class FrontEnd:
     def delays_for_stage(self, stage_index):
         delays = []
         for fi in range(self.config.get_num_stages()):
-            delays_for_factor = []
             if fi != stage_index:
                 delays += self.delays_for_factor(stage_index, fi)
         return delays
@@ -128,7 +124,7 @@ class FrontEnd:
     
     def indices_for_stage_factor_bit(self, stage_index, factor_index, bit_index):
         assert stage_index != factor_index, 'factor and stage should be different'
-        assert bit_index < self.q[factor_index], 'factor does not have that bit'
+        assert bit_index < self.config.prime_powers[factor_index], 'factor does not have that bit'
         
         p = self.config.primes[factor_index]
         b = 0

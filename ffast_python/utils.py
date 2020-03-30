@@ -9,6 +9,8 @@ def coprime(bins):
 
 
 def get_multiplicative_inverse(a, m, p, n):
+    a, m, p, n = int(a), int(m), int(p), int(n)
+
     F = p**n
     q = (p-1)*p**(n-1)-1
     ra1 = pow(a, q, F)
