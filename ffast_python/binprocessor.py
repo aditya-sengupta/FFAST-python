@@ -122,7 +122,7 @@ class BinProcessor:
 
     def get_omega2(self, i):
         """
-        This is my best implementation
+        This is my best implementation of doing phase unwarping in kay's method
         """
         a = i * self.delays_per_bunch_nb
         b = a + self.delays_per_bunch_nb
