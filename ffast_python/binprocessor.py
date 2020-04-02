@@ -184,7 +184,17 @@ class BinProcessor:
         self.noise /= len(delays)
 
     def is_singleton(self):
-        # TODO: look into zeroton test
+        """
+        Singleton detection 
+
+        TODO: make this part of the code more robust
+        - in the case of low SNR, the zeroton test (which is energy based) is not robust anymore,
+        - look into zeroton test in low SNR,
+        - one option to get around this is to look at the amplitude of the signal at the bin and declare it is
+          a singleton if it is large.  However, when we have small number of delays this might not be robust 
+          anymore.
+        """
+        
         # if self.is_zeroton():
             # return False
         
@@ -194,7 +204,8 @@ class BinProcessor:
         # if self.noise <= self.thresholds[self.stage] and norm_squared(self.amplitude) > self.minimum_energy:
             # is_singleton = True
 
-
+        # Alternate "signal detection" methos
+        # this is not working robustly so far
         if np.abs(self.amplitude) > 0.5:
             is_singleton = True
         else:
