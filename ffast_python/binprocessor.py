@@ -184,8 +184,9 @@ class BinProcessor:
         self.noise /= len(delays)
 
     def is_singleton(self):
-        if self.is_zeroton():
-            return False
+        # TODO: look into zeroton test
+        # if self.is_zeroton():
+            # return False
         
         self.process()
 
@@ -203,6 +204,9 @@ class BinProcessor:
 
     def is_zeroton(self):
         energy = norm_squared(self.observation_matrix[:,self.bin_absolute_index])
+
+        print('energy: {}'.format(energy))
+        print('threshold: {}'.format(self.thresholds[self.stage]))
         return energy <= self.thresholds[self.stage]
 
     def compute_thresholds(self):

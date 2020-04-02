@@ -41,7 +41,7 @@ class BackEnd:
 
                     if binprocessor.is_singleton():
                         # pdb.set_trace()
-                        print('found a singleton at {}'.format(binprocessor.location))
+                        print('found a singleton at {} -- stage {} -- bin {}'.format(binprocessor.location, stage, bin_relative_index))
 
                     if self.changed[self.bin_absolute_index] and binprocessor.is_singleton() and (binprocessor.location not in self.decoded_frequencies.keys()):
                         singleton_found = True

@@ -45,8 +45,8 @@ class ExperimentOutputSignal(OutputSignal):
         Here we compare the decoded frequencies to input signal frequencies
         to build the statistics.
         """
-        print('decoded frequencies:')
-        print(self.backend.decoded_frequencies)
+        # print('decoded frequencies:')
+        # print(self.backend.decoded_frequencies)
 
         missed_locations = set()
         for f in self.input_signal.freqs:

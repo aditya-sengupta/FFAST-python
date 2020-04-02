@@ -27,6 +27,7 @@ class FrontEnd:
             return self.delays
 
     def process(self):
+        self.compute_delays()
         signal = self.input_signal.time_signal
 
         # make the observation matrix
@@ -97,7 +98,7 @@ class FrontEnd:
         q = self.config.prime_powers[factor_index]
         
         # these are the other factors we need to annihilate
-        annihilating_jump = self.config.signal_length/self.config.bins[factor_index]/self.config.bins[stage_index]
+        annihilating_jump = self.config.signal_length/(self.config.bins[factor_index]*self.config.bins[stage_index])
         
         delays_for_factor = []
         for qi in range(q-1,-1,-1):
