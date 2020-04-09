@@ -27,7 +27,11 @@ class FrontEnd:
             return self.delays
 
     def process(self):
+        # re-compute delays (this can be done once or each time)
         self.compute_delays()
+        # re initialize the uses samples if we are recomputing delays
+        self.used_samples = set()
+
         signal = self.input_signal.time_signal
 
         # make the observation matrix
@@ -102,8 +106,11 @@ class FrontEnd:
         
         delays_for_factor = []
         for qi in range(q-1,-1,-1):
-            root = np.random.choice(self.config.signal_length, 1)
-            # root = 0
+            # random offsets
+            # root = np.random.choice(self.config.signal_length, 1)
+            # default 0 offset
+            root = 0
+            
             t = np.arange(0, p*self.config.delays_per_bunch_nb) * (annihilating_jump * p**qi)
             t = (root + t) % self.config.signal_length
             t = t.astype(int)
