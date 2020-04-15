@@ -42,6 +42,7 @@ class FrontEnd:
         for stage in range(self.config.get_num_stages()):
             # sampling period at the stage
             stage_sampling = int(self.sampling_period[stage])
+            # bin indices for stage beginning and end
             s, e = self.stage_begin_end(stage)
 
             for i, d in enumerate(self.get_delays_for_stage(stage)):
@@ -107,9 +108,9 @@ class FrontEnd:
         delays_for_factor = []
         for qi in range(q-1,-1,-1):
             # random offsets
-            # root = np.random.choice(self.config.signal_length, 1)
+            root = np.random.choice(self.config.signal_length, 1)
             # default 0 offset
-            root = 0
+            # root = 0
             
             t = np.arange(0, p*self.config.delays_per_bunch_nb) * (annihilating_jump * p**qi)
             t = (root + t) % self.config.signal_length

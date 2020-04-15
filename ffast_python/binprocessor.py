@@ -350,6 +350,7 @@ class BinProcessor:
         for l in range(prime_base):
             steering_vector = np.exp(-1j*2*np.pi*l*t/prime_base)
             current_inprod = chain.dot(steering_vector)
+
             if statistics_function(current_inprod) > max_inprod:
                 max_inprod = statistics_function(current_inprod)
                 best_loc = l
@@ -366,10 +367,14 @@ class BinProcessor:
         N = self.config.signal_length / self.config.bins[self.stage]
         
         c_so_far = 0
+        # go over each chain
         for chain_index in range(q):
             delay_b, delay_e = self.indices_for_stage_factor_bit(factor_index, chain_index)
+            # relevant chunk of the observation matrix
             x = self.observation_matrix[delay_b:delay_e, self.bin_absolute_index]
+            # the delays (sampling locations for the tone)
             t = np.array(self.get_delays_for_stage(self.stage)[delay_b:delay_e])
+            # rotate the signal with respect to the residual location in the stage
             y = x * np.exp(-1j*2*np.pi*t*r/F)
             ref_w0 = (2*np.pi)*c_so_far/N
             bit = self.estimate_bit_ml(y, t, ref_w0, prime_base=p)
@@ -382,6 +387,7 @@ class BinProcessor:
         N = self.config.signal_length // self.config.bins[self.stage]
         
         u = 0
+        # go over stages (si: stage index)
         for si in range(self.config.get_num_stages()):
             if si != self.stage:
                 p = self.config.primes[si]

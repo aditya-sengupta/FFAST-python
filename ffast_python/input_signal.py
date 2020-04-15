@@ -54,7 +54,8 @@ class ExperimentInputSignal(InputSignal):
 
         self.freqs = np.array(list(temp_locations.keys())) # could just use a Set?
 
-        # self.freqs = np.array([38])
+
+        # self.freqs = np.array([0])
 
         self.magnitudes = np.ones(self.freqs.size) * self.signal_magnitude # confirm they should all be the same magnitude
         # make phases to be fixed for now for simple debugging
@@ -79,14 +80,19 @@ class ExperimentInputSignal(InputSignal):
         Make this with randn as it is easier to read
         """
         signal_power = self.signal_magnitude ** 2
-        noise_power = 0
-        for i in range(self.config.signal_length):
-            noise_norm_factor = -2 * np.log(np.random.uniform())
-            noise_phase = np.random.uniform(0, 2 * np.pi)
-            noise_power += noise_norm_factor # redundant?
-            self.time_signal[i] += self.noise_sd * np.sqrt(noise_norm_factor / 2) * np.exp(1j * noise_phase)
+        noise_scaling = self.noise_sd/np.sqrt(2)
 
-        self.noise_power = noise_power * self.noise_sd ** 2
+        noise = noise_scaling*np.random.randn(self.config.signal_length) + 1j*noise_scaling*np.random.randn(self.config.signal_length)
+        self.time_signal += noise
+
+        # for i in range(self.config.signal_length):
+        #     noise_norm_factor = -2 * np.log(np.random.uniform())
+        #     noise_phase = np.random.uniform(0, 2 * np.pi)
+        #     noise_power += noise_norm_factor # redundant?
+        #     self.time_signal[i] += self.noise_sd * np.sqrt(noise_norm_factor / 2) * np.exp(1j * noise_phase)
+        # self.noise_power = noise_power * self.noise_sd ** 2
+
+        self.noise_power = np.sum(np.abs(noise)**2)
         self.real_snr = signal_power * self.config.signal_length / (self.noise_sd ** 2)
 
     def apply_quantization(self, bits_nb):

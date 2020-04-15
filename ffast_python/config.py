@@ -59,8 +59,10 @@ class Config:
             self.chains_nb = 1
             self.delays_per_bunch_nb = self.delays_nb
         assert self.signal_length >= self.signal_sparsity
-        assert self.delays_nb >= 2
-        assert self.delays_nb <= self.signal_length / max(self.bins)
+        
+        # TODO: uncomment these lines
+        # assert self.delays_nb >= 2
+        # assert self.delays_nb <= self.signal_length / max(self.bins)
         
         if self.is_kay_based_binprocessing():
             assert self.delays_per_bunch_nb >= 2
