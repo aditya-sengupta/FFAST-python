@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import time
 
+testname = "one_iteration"
 params = make_args()
 params.primes = [7, 19]
 params.prime_powers = [3, 2]
@@ -14,7 +15,7 @@ params.length = np.prod(params.bins)
 params.iterations = 50
 params.sparsity = 1
 methods = ['kay', 'kay2', 'new'] # ML is out for now
-for s in [6]:
+for s in [-14, -16, -18, -20]:
     params.snr = s
 
     config = Config(params)
@@ -50,13 +51,15 @@ for s in [6]:
     for i, m in enumerate(methods):
         ax1.plot(delay_sweep, touched_samples[i], label=m)
     ax1.legend()
-    ax1.set_title("Touched samples as a function of delays, SNR dB = {}".format(params.snr))
+    ax1.set_title("Touched samples, SNR dB = {}".format(params.snr))
+    ax1.set_xlabel("Delays")
 
     for i, m in enumerate(methods):
         ax2.plot(delay_sweep, times[i], label=m)
     ax2.legend()
-    ax2.set_title("Times as a function of delays, SNR dB = {}".format(params.snr))
-    plt.show()
+    ax2.set_title("Times, SNR dB = {}".format(params.snr))
+    ax2.set_xlabel("Delays")
+    plt.savefig('./results/test_' + testname + "_dB_" + str(params.snr) + ".pdf")
 
     print("Binning failure locations")
     print(np.where(failures != 0))
