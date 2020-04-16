@@ -93,7 +93,7 @@ class BinProcessor:
             elif self.bin_processing_method == 'kay2':
                 temp_location = self.signal_invk * self.get_omega2(i) % self.signal_length
             else:
-                print('error')
+                raise NotImplementedError
             temp_location += (temp_location > 0) * self.signal_length
             loc_update = temp_location / 2**i - location_bis
             r = loc_update - np.round((loc_update * 2**i) / self.signal_length) * (self.signal_length / 2**i)

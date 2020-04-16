@@ -49,6 +49,8 @@ class FFAST:
         self.backend = BackEnd(config, self.frontend)
         output_signal.set_backend(self.backend)
         self.iteration = 0
+        self.proportion = 1
+        self.time_per = float('inf')
 
     def get_delays(self):
         return self.frontend.delays
@@ -58,15 +60,21 @@ class FFAST:
         self.frontend.process()
         self.backend.process()
 
+    def set_results(self, time):
+        # a version of display_results that doesn't print
+        samples_used = self.frontend.get_used_samples_nb()
+        self.proportion = 100 * samples_used / self.config.signal_length_original
+        self.time_per = time / self.iteration
+
     def display_results(self, time):
         # print this by default
         self.config.display()
         print("<===== NUMBER OF SAMPLES =====>")
         samples_used = self.frontend.get_used_samples_nb()
         print("%d -> used samples" % samples_used)
-        proportion = 100 * samples_used / self.config.signal_length_original
-        print("%.2f%% samples touched" % proportion)
+        self.proportion = 100 * samples_used / self.config.signal_length_original
+        print("%.2f%% samples touched" % self.proportion)
         print("<===== AVERAGE TIME (in milliseconds) =====>")
         print("Total time: %d" % time)
-        time_per = time / self.iteration
-        print("Time per iteration: % d" % time_per)
+        self.time_per = time / self.iteration
+        print("Time per iteration: % d" % self.time_per)

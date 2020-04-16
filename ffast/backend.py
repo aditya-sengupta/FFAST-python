@@ -12,6 +12,7 @@ class BackEnd:
         self.frontend = frontend
         self.decoded_frequencies = {}
         self.real_freq_inds = []
+        self.verbose = False
 
     def initialize(self):
         self.decoded_frequencies = {}
@@ -39,7 +40,7 @@ class BackEnd:
 
                     binprocessor.adjust_to(self.bin_absolute_index, bin_relative_index, stage)
 
-                    if binprocessor.is_singleton():
+                    if binprocessor.is_singleton() and self.config.verbose:
                         # pdb.set_trace()
                         print('found a singleton at {} -- stage {} -- bin {}'.format(binprocessor.location, stage, bin_relative_index))
 
