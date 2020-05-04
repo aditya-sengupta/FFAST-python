@@ -21,10 +21,7 @@ class Config:
         self.compute_params()
 
     def is_kay_based_binprocessing(self):
-        if self.bin_processing_method == 'kay' or self.bin_processing_method == 'kay2':
-            return True
-        else:
-            return False
+        return self.bin_processing_method in ['kay', 'kay2']
 
     def compute_params(self):
         if self.apply_window_var:
