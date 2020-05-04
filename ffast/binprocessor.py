@@ -206,7 +206,7 @@ class BinProcessor:
 
         # Alternate "signal detection" methos
         # this is not working robustly so far
-        if np.abs(self.amplitude) > 0.5:
+        if np.abs(self.amplitude) > 0.9:
             is_singleton = True
         else:
             is_singleton = False
@@ -406,5 +406,3 @@ class BinProcessor:
         loc = u * self.config.bins[self.stage] + self.get_residual_location_for_stage() * N
 
         self.location = int(loc % self.config.signal_length)
-
-
